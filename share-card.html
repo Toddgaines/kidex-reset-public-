@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kidex Emergency Care Card</title>
+  <style>
+    body {
+      font-family: 'Nunito', Arial, sans-serif;
+      background: #F4F8F7;
+      color: #1B2A4A;
+      margin: 0;
+      padding: 20px;
+    }
+    .card {
+      max-width: 500px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      overflow: hidden;
+      border: 1px solid #E2E8F0;
+    }
+    .header {
+      background: linear-gradient(135deg, #2BBFAA 0%, #1B4A5A 100%);
+      color: #fff;
+      padding: 24px;
+      text-align: center;
+    }
+    .header img {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #fff;
+      margin-bottom: 12px;
+      background: #fff;
+    }
+    .content {
+      padding: 24px;
+    }
+    .section {
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #EDF2F7;
+    }
+    .section:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .label {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #718096;
+      margin-bottom: 4px;
+    }
+    .value {
+      font-size: 15px;
+      font-weight: 700;
+      color: #1B2A4A;
+    }
+    .btn {
+      display: inline-block;
+      background: #2BBFAA;
+      color: #fff;
+      text-decoration: none;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 14px;
+      margin-top: 6px;
+    }
+    .alert {
+      background: #FEF2F2;
+      border: 1px solid #FCA5A5;
+      color: #991B1B;
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+      font-weight: 700;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <div id="app">
+    <div style="text-align: center; margin-top: 60px; color: #718096; font-weight: 700;">Loading Emergency Care Card...</div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://pbxvcluvsllrnuspxsaq.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_F6EZe05MEqkN5EBlfEfNRA_xRRVfl-l';
+
+    async function loadCard() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      const appEl = document.getElementById('app');
+
+      if (!token) {
+        appEl.innerHTML = `<div class="card"><div class="content"><div class="alert">Invalid or missing Care Card token.</div></div></div>`;
+        return;
+      }
+
+      try {
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const { data, error } = await supabaseClient.rpc('get_shared_summary', { p_token: token });
+
+        if (error || !data || !data.ok) {
+          const errType = data?.error || error?.message || 'not_found';
+          let msg = 'Care Card not found.';
+          if (errType === 'revoked') msg = 'This Care Card link has been revoked by the family.';
+          else if (errType === 'expired') msg = 'This Care Card link has expired.';
+          appEl.innerHTML = `<div class="card"><div class="content"><div class="alert">${msg}</div></div></div>`;
+          return;
+        }
+
+        const child = data.child || {};
+        const contacts = Array.isArray(child.emergencyContacts) ? child.emergencyContacts : [];
+
+        let contactsHtml = contacts.map(c => `
+          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 12px; margin-top: 8px;">
+            <div style="font-weight: 900; color: #1B2A4A;">${c.name || 'Emergency Contact'} ${c.relationship ? '('+c.relationship+')' : ''}</div>
+            ${c.phone ? `<div style="margin-top: 4px;"><a href="tel:${c.phone}" class="btn" style="background: #10B981; font-size: 13px; padding: 6px 12px;">📞 Call ${c.phone}</a></div>` : ''}
+            ${c.phone2 ? `<div style="margin-top: 4px;"><a href="tel:${c.phone2}" class="btn" style="background: #10B981; font-size: 13px; padding: 6px 12px;">📞 Call Alt ${c.phone2}</a></div>` : ''}
+          </div>
+        `).join('') || '<div style="color: #718096; font-size: 14px;">No emergency contacts listed.</div>';
+
+        appEl.innerHTML = `
+          <div class="card">
+            <div class="header">
+              ${child.photo ? `<img src="${child.photo}" alt="Child Photo">` : '<div style="font-size: 40px; margin-bottom: 8px;">🧒</div>'}
+              <h2 style="margin: 0; font-size: 24px; font-weight: 900;">${child.name || 'Emergency Care Card'}</h2>
+              <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">Shared via Kidex Family Vault</div>
+            </div>
+            <div class="content">
+              ${child.allergies ? `
+                <div class="section">
+                  <div class="label" style="color: #EF4444;">⚠️ Allergies</div>
+                  <div class="value" style="color: #991B1B; white-space: pre-wrap;">${child.allergies}</div>
+                </div>
+              ` : ''}
+              ${child.medications ? `
+                <div class="section">
+                  <div class="label">💊 Medications</div>
+                  <div class="value" style="white-space: pre-wrap;">${child.medications}</div>
+                </div>
+              ` : ''}
+              <div class="section">
+                <div class="label">🚨 Emergency Contacts</div>
+                ${contactsHtml}
+              </div>
+              ${child.doctor?.name ? `
+                <div class="section">
+                  <div class="label">🏥 Family Doctor</div>
+                  <div class="value">${child.doctor.name} (${child.doctor.clinic || 'Clinic'})</div>
+                  ${child.doctor.phone ? `<a href="tel:${child.doctor.phone}" class="btn">📞 Call Doctor</a>` : ''}
+                </div>
+              ` : ''}
+              ${child.notes ? `
+                <div class="section">
+                  <div class="label">📝 General Notes</div>
+                  <div class="value" style="white-space: pre-wrap;">${child.notes}</div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        appEl.innerHTML = `<div class="card"><div class="content"><div class="alert">Could not load Care Card details.</div></div></div>`;
+      }
+    }
+
+    loadCard();
+  </script>
+</body>
+</html>
