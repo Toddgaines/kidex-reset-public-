@@ -13,7 +13,7 @@
       padding: 20px;
     }
     .card {
-      max-width: 500px;
+      max-width: 540px;
       margin: 20px auto;
       background: #fff;
       border-radius: 20px;
@@ -62,6 +62,13 @@
       font-weight: 700;
       color: #1B2A4A;
     }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 4px 0;
+      font-size: 13px;
+    }
     .btn {
       display: inline-block;
       background: #2BBFAA;
@@ -87,7 +94,7 @@
 </head>
 <body>
   <div id="app">
-    <div style="text-align: center; margin-top: 60px; color: #718096; font-weight: 700;">Loading Emergency Care Card...</div>
+    <div style="text-align: center; margin-top: 60px; color: #718096; font-weight: 700;">Loading Care Summary...</div>
   </div>
 
   <script>
@@ -113,61 +120,104 @@
           let msg = 'Care Card not found.';
           if (errType === 'revoked') msg = 'This Care Card link has been revoked by the family.';
           else if (errType === 'expired') msg = 'This Care Card link has expired.';
+          else if (errType === 'regenerate_required') msg = 'This link was created by an older version of Kidex — please ask the sender for a new link.';
           appEl.innerHTML = `<div class="card"><div class="content"><div class="alert">${msg}</div></div></div>`;
           return;
         }
 
-        const child = data.child || {};
-        const contacts = Array.isArray(child.emergencyContacts) ? child.emergencyContacts : [];
+        const summary = data.summary || {};
+        const childrenList = Array.isArray(summary.children) ? summary.children : [];
+        const photoUrl = data.photo_url;
 
-        let contactsHtml = contacts.map(c => `
-          <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 12px; margin-top: 8px;">
-            <div style="font-weight: 900; color: #1B2A4A;">${c.name || 'Emergency Contact'} ${c.relationship ? '('+c.relationship+')' : ''}</div>
-            ${c.phone ? `<div style="margin-top: 4px;"><a href="tel:${c.phone}" class="btn" style="background: #10B981; font-size: 13px; padding: 6px 12px;">📞 Call ${c.phone}</a></div>` : ''}
-            ${c.phone2 ? `<div style="margin-top: 4px;"><a href="tel:${c.phone2}" class="btn" style="background: #10B981; font-size: 13px; padding: 6px 12px;">📞 Call Alt ${c.phone2}</a></div>` : ''}
-          </div>
-        `).join('') || '<div style="color: #718096; font-size: 14px;">No emergency contacts listed.</div>';
+        let htmlOut = '';
 
-        appEl.innerHTML = `
-          <div class="card">
-            <div class="header">
-              ${child.photo ? `<img src="${child.photo}" alt="Child Photo">` : '<div style="font-size: 40px; margin-bottom: 8px;">🧒</div>'}
-              <h2 style="margin: 0; font-size: 24px; font-weight: 900;">${child.name || 'Emergency Care Card'}</h2>
-              <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">Shared via Kidex Family Vault</div>
+        childrenList.forEach((child) => {
+          const contacts = Array.isArray(child.emergencyContacts) ? child.emergencyContacts : [];
+          const keyDates = Array.isArray(child.keyDates) ? child.keyDates : [];
+
+          const contactsHtml = contacts.map(c => `
+            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 12px; margin-top: 8px;">
+              <div style="font-weight: 900; color: #1B2A4A;">${c.name || 'Emergency Contact'} ${c.relationship ? '('+c.relationship+')' : ''}</div>
+              ${c.phone ? `<div style="margin-top: 4px;"><a href="tel:${c.phone}" class="btn" style="background: #10B981; font-size: 13px; padding: 6px 12px;">📞 Call ${c.phone}</a></div>` : ''}
+              ${c.phone2 ? `<div style="margin-top: 4px;"><a href="tel:${c.phone2}" class="btn" style="background: #10B981; font-size: 13px; padding: 6px 12px;">📞 Call Alt ${c.phone2}</a></div>` : ''}
             </div>
-            <div class="content">
-              ${child.allergies ? `
-                <div class="section">
-                  <div class="label" style="color: #EF4444;">⚠️ Allergies</div>
-                  <div class="value" style="color: #991B1B; white-space: pre-wrap;">${child.allergies}</div>
-                </div>
-              ` : ''}
-              ${child.medications ? `
-                <div class="section">
-                  <div class="label">💊 Medications</div>
-                  <div class="value" style="white-space: pre-wrap;">${child.medications}</div>
-                </div>
-              ` : ''}
-              <div class="section">
-                <div class="label">🚨 Emergency Contacts</div>
-                ${contactsHtml}
+          `).join('') || '<div style="color: #718096; font-size: 13px;">No emergency contacts listed.</div>';
+
+          htmlOut += `
+            <div class="card">
+              <div class="header">
+                ${photoUrl || child.photo ? `<img src="${photoUrl || child.photo}" alt="Child Photo">` : '<div style="font-size: 40px; margin-bottom: 8px;">🧒</div>'}
+                <h2 style="margin: 0; font-size: 24px; font-weight: 900;">${child.name || 'Child'}</h2>
+                <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">Shared via Kidex Family Vault</div>
               </div>
-              ${child.doctor?.name ? `
-                <div class="section">
-                  <div class="label">🏥 Family Doctor</div>
-                  <div class="value">${child.doctor.name} (${child.doctor.clinic || 'Clinic'})</div>
-                  ${child.doctor.phone ? `<a href="tel:${child.doctor.phone}" class="btn">📞 Call Doctor</a>` : ''}
-                </div>
-              ` : ''}
-              ${child.notes ? `
-                <div class="section">
-                  <div class="label">📝 General Notes</div>
-                  <div class="value" style="white-space: pre-wrap;">${child.notes}</div>
-                </div>
-              ` : ''}
+              <div class="content">
+                ${child.allergies ? `
+                  <div class="section">
+                    <div class="label" style="color: #EF4444;">⚠️ Allergies</div>
+                    <div class="value" style="color: #991B1B; white-space: pre-wrap;">${child.allergies}</div>
+                  </div>
+                ` : ''}
+                ${child.medications ? `
+                  <div class="section">
+                    <div class="label">💊 Medications</div>
+                    <div class="value" style="white-space: pre-wrap;">${child.medications}</div>
+                  </div>
+                ` : ''}
+                ${child.emergencyContacts ? `
+                  <div class="section">
+                    <div class="label">🚨 Emergency Contacts</div>
+                    ${contactsHtml}
+                  </div>
+                ` : ''}
+                ${child.doctor?.name ? `
+                  <div class="section">
+                    <div class="label">🏥 Family Doctor</div>
+                    <div class="value">${child.doctor.name} (${child.doctor.clinic || 'Clinic'})</div>
+                    ${child.doctor.phone ? `<a href="tel:${child.doctor.phone}" class="btn">📞 Call Doctor</a>` : ''}
+                  </div>
+                ` : ''}
+                ${child.dentist?.name ? `
+                  <div class="section">
+                    <div class="label">🦷 Dentist</div>
+                    <div class="value">${child.dentist.name} (${child.dentist.clinic || 'Clinic'})</div>
+                    ${child.dentist.phone ? `<a href="tel:${child.dentist.phone}" class="btn">📞 Call Dentist</a>` : ''}
+                  </div>
+                ` : ''}
+                ${child.school?.name ? `
+                  <div class="section">
+                    <div class="label">🏫 School & Care</div>
+                    <div class="row"><span style="color: #718096; font-weight: 700;">School</span><span style="font-weight: 800;">${child.school.name}</span></div>
+                    ${child.school.phone ? `<div class="row"><span style="color: #718096; font-weight: 700;">Phone</span><span>${child.school.phone}</span></div>` : ''}
+                    ${child.school.dropOffLocation ? `<div class="row"><span style="color: #718096; font-weight: 700;">Drop-off</span><span>${child.school.dropOffLocation}</span></div>` : ''}
+                    ${child.school.pickUpLocation ? `<div class="row"><span style="color: #718096; font-weight: 700;">Pick-up</span><span>${child.school.pickUpLocation}</span></div>` : ''}
+                  </div>
+                ` : ''}
+                ${child.favoriteMeals || child.foodsDontLike || child.dietaryNotes ? `
+                  <div class="section">
+                    <div class="label">🍽️ Food & Meals</div>
+                    ${child.favoriteMeals ? `<div class="row"><span style="color: #718096; font-weight: 700;">Favorites</span><span>${child.favoriteMeals}</span></div>` : ''}
+                    ${child.foodsDontLike ? `<div class="row"><span style="color: #718096; font-weight: 700;">Dislikes</span><span>${child.foodsDontLike}</span></div>` : ''}
+                    ${child.dietaryNotes ? `<div class="row"><span style="color: #718096; font-weight: 700;">Dietary Notes</span><span>${child.dietaryNotes}</span></div>` : ''}
+                  </div>
+                ` : ''}
+                ${keyDates.length > 0 ? `
+                  <div class="section">
+                    <div class="label">🗓️ Important Dates</div>
+                    ${keyDates.map(kd => `<div class="row"><span style="color: #718096; font-weight: 700;">${kd.title}</span><span>${kd.date}</span></div>`).join('')}
+                  </div>
+                ` : ''}
+                ${child.notes ? `
+                  <div class="section">
+                    <div class="label">📝 Notes</div>
+                    <div class="value" style="white-space: pre-wrap;">${child.notes}</div>
+                  </div>
+                ` : ''}
+              </div>
             </div>
-          </div>
-        `;
+          `;
+        });
+
+        appEl.innerHTML = htmlOut || `<div class="card"><div class="content"><div class="alert">No care summary details available.</div></div></div>`;
       } catch (err) {
         appEl.innerHTML = `<div class="card"><div class="content"><div class="alert">Could not load Care Card details.</div></div></div>`;
       }
