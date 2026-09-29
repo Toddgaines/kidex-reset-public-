@@ -136,17 +136,24 @@
           const keyDates = Array.isArray(child.keyDates) ? child.keyDates : [];
 
           const contactsHtml = contacts.map(c => `
-            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 12px; margin-top: 8px;">
-              <div style="font-weight: 900; color: #1B2A4A;">${c.name || 'Emergency Contact'} ${c.relationship ? '('+c.relationship+')' : ''}</div>
-              ${c.phone ? `<div style="margin-top: 4px;"><a href="tel:${c.phone}" class="btn" style="background: #10B981; font-size: 13px; padding: 6px 12px;">📞 Call ${c.phone}</a></div>` : ''}
-              ${c.phone2 ? `<div style="margin-top: 4px;"><a href="tel:${c.phone2}" class="btn" style="background: #10B981; font-size: 13px; padding: 6px 12px;">📞 Call Alt ${c.phone2}</a></div>` : ''}
+            <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px; margin-top: 10px; display: flex; gap: 12px; align-items: center;">
+              ${c.photo ? `<img src="${c.photo}" alt="${c.name || 'Contact'}" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid #2BBFAA; flex-shrink: 0;">` : '<div style="width: 44px; height: 44px; border-radius: 50%; background: #E4F7F4; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0;">👤</div>'}
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 900; color: #1B2A4A; font-size: 15px;">${c.name || 'Emergency Contact'} ${c.relationship ? '('+c.relationship+')' : ''}</div>
+                ${c.address ? `<div style="font-size: 12px; color: #5A7184; margin-top: 2px;">📍 ${c.address}</div>` : ''}
+                ${c.email ? `<div style="font-size: 12px; color: #5A7184; margin-top: 2px;">✉️ <a href="mailto:${c.email}" style="color: #2BBFAA; text-decoration: none;">${c.email}</a></div>` : ''}
+                <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px;">
+                  ${c.phone ? `<a href="tel:${c.phone}" class="btn" style="background: #10B981; font-size: 12px; padding: 6px 12px; margin-top: 0;">📞 ${c.phone}</a>` : ''}
+                  ${c.phone2 ? `<a href="tel:${c.phone2}" class="btn" style="background: #10B981; font-size: 12px; padding: 6px 12px; margin-top: 0;">📞 Alt ${c.phone2}</a>` : ''}
+                </div>
+              </div>
             </div>
           `).join('') || '<div style="color: #718096; font-size: 13px;">No emergency contacts listed.</div>';
 
           htmlOut += `
             <div class="card">
               <div class="header">
-                ${photoUrl || child.photo ? `<img src="${photoUrl || child.photo}" alt="Child Photo">` : '<div style="font-size: 40px; margin-bottom: 8px;">🧒</div>'}
+                ${child.photo || photoUrl ? `<img src="${child.photo || photoUrl}" alt="Child Photo">` : '<div style="font-size: 40px; margin-bottom: 8px;">🧒</div>'}
                 <h2 style="margin: 0; font-size: 24px; font-weight: 900;">${child.name || 'Child'}</h2>
                 <div style="font-size: 13px; opacity: 0.9; margin-top: 4px;">Shared via Kidex Family Vault</div>
               </div>
@@ -183,13 +190,16 @@
                     ${child.dentist.phone ? `<a href="tel:${child.dentist.phone}" class="btn">📞 Call Dentist</a>` : ''}
                   </div>
                 ` : ''}
-                ${child.school?.name ? `
+                ${child.school?.name || child.beforeCare?.provider || child.afterCare?.provider ? `
                   <div class="section">
-                    <div class="label">🏫 School & Care</div>
-                    <div class="row"><span style="color: #718096; font-weight: 700;">School</span><span style="font-weight: 800;">${child.school.name}</span></div>
-                    ${child.school.phone ? `<div class="row"><span style="color: #718096; font-weight: 700;">Phone</span><span>${child.school.phone}</span></div>` : ''}
-                    ${child.school.dropOffLocation ? `<div class="row"><span style="color: #718096; font-weight: 700;">Drop-off</span><span>${child.school.dropOffLocation}</span></div>` : ''}
-                    ${child.school.pickUpLocation ? `<div class="row"><span style="color: #718096; font-weight: 700;">Pick-up</span><span>${child.school.pickUpLocation}</span></div>` : ''}
+                    <div class="label">🏫 School & Care Programs</div>
+                    ${child.school?.name ? `<div class="row"><span style="color: #718096; font-weight: 700;">School</span><span style="font-weight: 800;">${child.school.name}</span></div>` : ''}
+                    ${child.school?.address ? `<div class="row"><span style="color: #718096; font-weight: 700;">School Address</span><span>${child.school.address}</span></div>` : ''}
+                    ${child.school?.phone ? `<div class="row"><span style="color: #718096; font-weight: 700;">School Phone</span><span>${child.school.phone}</span></div>` : ''}
+                    ${child.beforeCare?.provider ? `<div class="row" style="margin-top: 8px;"><span style="color: #718096; font-weight: 700;">Before Care</span><span style="font-weight: 800;">${child.beforeCare.provider}</span></div>` : ''}
+                    ${child.beforeCare?.address ? `<div class="row"><span style="color: #718096; font-weight: 700;">Before Care Address</span><span>${child.beforeCare.address}</span></div>` : ''}
+                    ${child.afterCare?.provider ? `<div class="row" style="margin-top: 8px;"><span style="color: #718096; font-weight: 700;">After Care</span><span style="font-weight: 800;">${child.afterCare.provider}</span></div>` : ''}
+                    ${child.afterCare?.address ? `<div class="row"><span style="color: #718096; font-weight: 700;">After Care Address</span><span>${child.afterCare.address}</span></div>` : ''}
                   </div>
                 ` : ''}
                 ${child.favoriteMeals || child.foodsDontLike || child.dietaryNotes ? `
